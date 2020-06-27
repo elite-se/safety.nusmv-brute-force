@@ -1,9 +1,11 @@
-# Brute forcing nusmv
+# Brute forcing nuSMV
 
 ### How it works
 
 Splits all LTLs and CTLs at the end of the .smv file and starts a nusmv instance for every formula.
 The output is saved in the temp folder. The temp folder gets deleted when starting the process!
+
+Multi line LTLs and CTLs should work
 
 ### Run
 
@@ -24,3 +26,4 @@ Tested with Python 3.7.7 64-bit on Windows 10.
 
 - The outputs aren't processed, only stored into files. It would be nice to display which checks failed
 - A keyboard interrupt on Console should kill all nusmv processes. This does not work if the process is started with an IDE like VsCode.
+- No batch mode with an upper limit is possible yet. Your PC might get fried
