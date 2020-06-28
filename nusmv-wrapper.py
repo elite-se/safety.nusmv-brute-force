@@ -46,6 +46,16 @@ for line in smvFileLines:
 with open('temp/smvWithoutChecks.smv', 'w') as smvWithoutChecksFile:
     smvWithoutChecksFile.writelines(smvWithoutChecks)
 
+for index, check in enumerate(smvChecks):
+    print("Id %i: %s" % (index, check))
+
+selectedChecksString = input('Select checks to run, e.g.: (1,3,7) or leave empty to run all: ').strip()
+
+if selectedChecksString is not "":
+    selectedChecksList = list(map(lambda check: int(check.strip()), selectedChecksString.split(",")))
+    assert len(selectedChecksList) > 0
+    smvChecks = [smvChecks[i] for i in selectedChecksList]
+
 fileNames = []
 for index, check in enumerate(smvChecks):
     print("Id %i: %s" % (index, check))
@@ -70,7 +80,6 @@ for index, path in enumerate(fileNames):
 
 try:
     while True:
-        time.sleep(5)
         totalProcesses = len(processes)
         finishedProcesses = []
         ongoingProcesses = []
@@ -83,6 +92,7 @@ try:
             print()
             break
         print("Active processes: %s, finished: %s" % (''.join(str(proc) + ',' for proc in ongoingProcesses), ''.join(str(proc) + ',' for proc in finishedProcesses)), end='\r')
+        time.sleep(5)
 except KeyboardInterrupt:
     for index, process in enumerate(processes):
         try:
