@@ -1,49 +1,50 @@
-import argparse, os
+import argparse
+import datetime
+import os
 import shutil
-from subprocess import Popen, PIPE
-import time, datetime
+import time
+from subprocess import Popen
+from util.smvFileParser import extractChecks
+
 
 # https://stackoverflow.com/a/51212150/6319588
 def file_path(string):
     if os.path.isfile(string):
         return string
     else:
+        raise FileNotFoundError(string)
+
+
+def dir_path(string):
+    if os.path.isdir(string):
+        return string
+    else:
         raise NotADirectoryError(string)
+
+
+def setupWorkDir(outPath: str):
+    if outPath is 'None':
+        shutil.rmtree('temp', ignore_errors=True)
+        os.mkdir('temp')
+        return 'temp'
+    return outPath
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--path', type=file_path, required=True, help='Path to the .smv file you want to check')
 parser.add_argument('--nusmv', type=file_path, required=True, help='Path to Nusmv executable')
+parser.add_argument('--outpath', type=dir_path, help='Optional output directory. If not set, using temp')
 
 args = parser.parse_args()
 
-shutil.rmtree('temp',ignore_errors=True)
-os.mkdir('temp')
+workDirectory = setupWorkDir(args.outpath)
 
 with open(args.path, 'r') as smvFile:
     smvFileContent = smvFile.read()
 
-smvFileLines = smvFileContent.splitlines()
+smvWithoutChecks, smvChecks = extractChecks(smvFileContent)
 
-smvWithoutChecks = []
-smvChecks = []
-checkConcluded = True
-
-for line in smvFileLines:
-    if line.startswith('CTLSPEC') or line.startswith('LTLSPEC'):
-        checkConcluded = True
-        smvChecks.append(line)
-        if ";" not in line:
-            checkConcluded = False
-    elif checkConcluded or line.startswith('DEFINE') or line.startswith('--') or line.isspace():
-        # this line does not belong to a check anymore
-        smvWithoutChecks.append(line + '\n')
-        checkConcluded = True
-    else:
-        # this is a multiline LTL/CTL Spec
-        smvChecks[-1] += ' ' + line.replace('\t', ' ').replace('  ', ' ')
-        
-
-with open('temp/smvWithoutChecks.smv', 'w') as smvWithoutChecksFile:
+with open(os.path.join(workDirectory, smvWithoutChecks.smv), 'w') as smvWithoutChecksFile:
     smvWithoutChecksFile.writelines(smvWithoutChecks)
 
 for index, check in enumerate(smvChecks):
@@ -59,7 +60,7 @@ if selectedChecksString is not "":
 fileNames = []
 for index, check in enumerate(smvChecks):
     print("Id %i: %s" % (index, check))
-    fileName = "temp/smvWithCheck%i.smv" % index
+    fileName = os.path.join(workDirectory, ("smvWithCheck%i.smv" % index))
     fileNames.append(os.path.abspath(fileName))
     with open(fileName, 'w') as svmCheckFile:
         svmCheckFile.writelines(smvWithoutChecks)
@@ -72,7 +73,7 @@ openFiles = []
 startTime = time.time_ns()
 print("Starting processes at " + datetime.datetime.now().strftime("%H:%M:%S"))
 for index, path in enumerate(fileNames):
-    fileName = 'temp/out%i.txt' % index
+    fileName = os.path.join(workDirectory, ('out%i.txt' % index))
     outFile = open(fileName, 'w')
     openFiles.append(outFile)
     process = Popen([args.nusmv, path], stdout=outFile, stderr=outFile)
