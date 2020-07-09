@@ -9,7 +9,7 @@ Multi line LTLs and CTLs should work
 
 ### Run
 
-`python .\nusmv-wrapper.py --path="" --nusmv=""`
+`python .\nusmv-brute-force.py --path="" --nusmv=""`
 
 Where path is the .smv file and nusmv the nusmv executable file
 
