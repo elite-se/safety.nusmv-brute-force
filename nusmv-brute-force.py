@@ -1,50 +1,45 @@
-import argparse
 import datetime
 import os
 import shutil
 import time
 from subprocess import Popen
 from util.smvFileParser import extractChecks
-
-
-# https://stackoverflow.com/a/51212150/6319588
-def file_path(string):
-    if os.path.isfile(string):
-        return string
-    else:
-        raise FileNotFoundError(string)
-
-
-def dir_path(string):
-    if os.path.isdir(string):
-        return string
-    else:
-        raise NotADirectoryError(string)
+from util.argumentParser import parseArguments
+from util.configFileParser import parseConfig
 
 
 def setupWorkDir(outPath: str):
-    if outPath is 'None':
+    if outPath is None:
         shutil.rmtree('temp', ignore_errors=True)
         os.mkdir('temp')
         return 'temp'
     return outPath
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--path', type=file_path, required=True, help='Path to the .smv file you want to check')
-parser.add_argument('--nusmv', type=file_path, required=True, help='Path to Nusmv executable')
-parser.add_argument('--outpath', type=dir_path, help='Optional output directory. If not set, using temp')
+smvPath, nusmvPath, outPath, configFile = parseArguments()
 
-args = parser.parse_args()
+if smvPath is None or nusmvPath is None:
+    # require config
+    configSmvPath: str
+    configNusmvPath: str
+    if configFile is not None:
+        configSmvPath, configNusmvPath = parseConfig(configFile)
+    else:
+        configSmvPath, configNusmvPath = parseConfig()
+    if smvPath is None:
+        smvPath = configSmvPath
+    if nusmvPath is None:
+        nusmvPath = configNusmvPath
 
-workDirectory = setupWorkDir(args.outpath)
 
-with open(args.path, 'r') as smvFile:
+workDirectory = setupWorkDir(outPath)
+
+with open(smvPath, 'r') as smvFile:
     smvFileContent = smvFile.read()
 
 smvWithoutChecks, smvChecks = extractChecks(smvFileContent)
 
-with open(os.path.join(workDirectory, smvWithoutChecks.smv), 'w') as smvWithoutChecksFile:
+with open(os.path.join(workDirectory, 'smvWithoutChecks.smv'), 'w') as smvWithoutChecksFile:
     smvWithoutChecksFile.writelines(smvWithoutChecks)
 
 for index, check in enumerate(smvChecks):
@@ -76,7 +71,7 @@ for index, path in enumerate(fileNames):
     fileName = os.path.join(workDirectory, ('out%i.txt' % index))
     outFile = open(fileName, 'w')
     openFiles.append(outFile)
-    process = Popen([args.nusmv, path], stdout=outFile, stderr=outFile)
+    process = Popen([nusmvPath, path], stdout=outFile, stderr=outFile)
     processes.append(process)
 
 try:
