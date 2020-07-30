@@ -6,6 +6,7 @@ from subprocess import Popen
 from util.smvFileParser import extractChecks
 from util.argumentParser import parseArguments
 from util.configFileParser import parseConfig
+import re
 
 
 def setupWorkDir(outPath: str):
@@ -14,6 +15,41 @@ def setupWorkDir(outPath: str):
         os.mkdir('temp')
         return 'temp'
     return outPath
+
+
+def checkForFailedChecks(subDir: str = 'temp/'):
+    outFileRegex = re.compile('out[0-9]+\\.txt')
+    allOutputFiles = [f for f in os.listdir(subDir) if outFileRegex.match(f)]
+
+    failedChecks = []
+    passedChecks = []
+
+    for outputFile in allOutputFiles:
+        with open(subDir + outputFile, 'r') as openOutputFile:
+            fileContent = openOutputFile.read()
+
+            if 'as demonstrated by the following execution sequence' in fileContent:
+                failedChecks.append(outputFile)
+            else:
+                passedChecks.append(outputFile)
+
+    passedChecksNumbers = []
+
+    for passedCheck in passedChecks:
+        checkNumber = re.search('out([0-9]+).txt', passedCheck)
+        passedChecksNumbers.append(checkNumber.group(1))
+
+    print('The following checks passed: ' + ','.join(passedChecksNumbers))
+
+    failedChecksNumbers = []
+
+    for failedCheck in failedChecks:
+        checkNumber = re.search('out([0-9]+).txt', failedCheck)
+        failedChecksNumbers.append(checkNumber.group(1))
+
+        os.rename(subDir + failedCheck, subDir + failedCheck + '.failed')
+
+    print('The following checks failed: ' + ','.join(failedChecksNumbers))
 
 
 smvPath, nusmvPath, outPath, configFile = parseArguments()
@@ -30,7 +66,6 @@ if smvPath is None or nusmvPath is None:
         smvPath = configSmvPath
     if nusmvPath is None:
         nusmvPath = configNusmvPath
-
 
 workDirectory = setupWorkDir(outPath)
 
@@ -87,8 +122,10 @@ try:
         if len(ongoingProcesses) is 0:
             print()
             break
-        print("Active processes: %s, finished: %s" % (''.join(str(proc) + ',' for proc in ongoingProcesses), ''.join(str(proc) + ',' for proc in finishedProcesses)), end='\r')
-        time.sleep(5)
+        print("Active processes: %s; finished: %s" % (
+            ','.join(str(proc) for proc in ongoingProcesses), ','.join(str(proc) for proc in finishedProcesses)),
+              end='\r')
+        time.sleep(1)
 except KeyboardInterrupt:
     for index, process in enumerate(processes):
         try:
@@ -103,3 +140,5 @@ for openFile in openFiles:
 
 afterTime = time.time_ns()
 print("Finished after %f ms" % ((afterTime - startTime) / 1000000))
+
+checkForFailedChecks()

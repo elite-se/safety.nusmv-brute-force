@@ -24,16 +24,11 @@ Tested with Python 3.7.7 64-bit on Windows 10.
 
 ### Limitations
 
-- The outputs aren't processed, only stored into files. It would be nice to display which checks failed
 - A keyboard interrupt on Console should kill all nusmv processes. This does not work if the process is started with an IDE like VsCode.
 - No batch mode with an upper limit is possible yet. Your PC might get fried
 
 ### Todos
 
-- cleanup naming
-- create functions
-- add config for nusmv path
-- evaluate output
 - create output folders
 - calculate diff and only calculate changed checks
 - fully automatic DCCA
